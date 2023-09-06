@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Мониторинг температуры</title>
+    <style>
+      h1,
+      p {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Мониторинг температуры</h1>
+    <p>Текущая температура: %.1lf °C</p>
+    <p>Последняя передача на приемник: %s, %lu сек назад</p>
+    <p>Последняя успешная передача: %lu сек назад</p>
+    <form style="display: grid; grid-template-columns: min-content 1fr; align-items: center; gap: 1em" method="POST">
+      <span>Имя WiFi сети:</span><input type="text" name="ssid" required value="%s" />
+
+      <span>Пароль WiFi сети:</span><input type="password" name="pass" required />
+
+      <span>IP-адрес приемника:</span><input type="text" name="ip" required value="%s" />
+
+      <input style="grid-column: span 2" type="submit" value="Сохранить" />
+    </form>
+  </body>
+</html>

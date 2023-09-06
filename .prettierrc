@@ -1,0 +1,25 @@
+{
+  "trailingComma": "all",
+  "arrowParens": "avoid",
+  "singleQuote": false,
+  "printWidth": 120,
+  "useTabs": false,
+  "tabWidth": 2,
+  "semi": true,
+  "importOrder": [
+    "^(\\.{1,2}/)+images$",
+    "^(\\.{1,2}/)+routes$",
+    "^(\\.{1,2}/)+hooks(.*)$",
+    "^(\\.{1,2}/)+hoc(.*)$",
+    "^(\\.{1,2}/)+pages(.*)$",
+    "^(\\.{1,2}/)+components(.*)$",
+    "^(\\.{1,2}/)+services(.*)$",
+    "^(\\.{1,2}/)+store(.*)$",
+    "^(\\.{1,2}/)+helpers(.*)$",
+    "^\\.\\./(.*)[^(.scss)]$",
+    "^\\./(.*)[^(.scss)]$",
+    ".scss$"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
+}
