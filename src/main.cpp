@@ -1,3 +1,4 @@
+#include <ArduinoOTA.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <ESP8266HTTPClient.h>
@@ -19,6 +20,11 @@ DallasTemperature dallasSensors(&oneWire);
 // Wifi AP configuration
 constexpr const char* const wifiAPSsid = "TempSensor01";
 constexpr const char* const wifiAPPass = "sensorTemp";
+
+// OTA configuration
+constexpr uint16_t otaPort = 8232;
+constexpr const char* const otaHostname = "esp-temp";
+constexpr const char* const otaPassword = "temp-esp";
 
 // Web server configuration
 ESP8266WebServer server(80);
@@ -42,6 +48,74 @@ unsigned long boardTime;
 int lastStatusCode = 0;
 unsigned long lastStatusCodeTime;
 unsigned long lastStatusCodeSuccessTime = -1;
+
+bool wifiConnect();
+void configureOTA();
+void handleRoot();
+void sendToTarget();
+
+void setup()
+{
+#ifdef NEED_SERIAL_PRINT
+  Serial.begin(115200);
+#endif
+
+#ifdef NEED_SERIAL_PRINT
+  Serial.print("Init EEPROM with size = ");
+  Serial.println(sizeof(ConfigData));
+#endif
+  EEPROM.begin(sizeof(ConfigData));
+
+  config.read();
+
+  dallasSensors.begin();
+
+  dallasSensors.requestTemperatures();
+  delay(750); // to dallas collect data
+  actualTemp = dallasSensors.getTempCByIndex(0);
+
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAPConfig(apIp, apGateway, apSubnet);
+  WiFi.softAP(wifiAPSsid, wifiAPPass);
+  lastWifiTime = millis();
+  wifiConnect();
+
+  server.on("/", handleRoot);
+  server.begin();
+#ifdef NEED_SERIAL_PRINT
+  Serial.println("HTTP server started");
+#endif
+
+  configureOTA();
+
+  boardTime = millis();
+}
+
+void loop()
+{
+  auto passedTime = millis() - boardTime;
+
+  if (passedTime > 1000)
+  {
+    actualTemp = dallasSensors.getTempCByIndex(0);
+
+#ifdef NEED_SERIAL_PRINT
+    Serial.print("Temp: ");
+    Serial.println(actualTemp);
+#endif
+
+    sendToTarget();
+    boardTime = millis();
+  }
+  else if (passedTime > 100)
+  {
+    dallasSensors.requestTemperatures();
+  }
+
+  wifiConnect();
+  server.handleClient();
+  ArduinoOTA.handle();
+}
 
 bool wifiConnect()
 {
@@ -91,6 +165,61 @@ bool wifiConnect()
   WiFi.disconnect();
   WiFi.begin(config.data.ssid, config.data.pass);
   return WiFi.isConnected();
+}
+
+void configureOTA()
+{
+  ArduinoOTA.setPort(otaPort);
+  ArduinoOTA.setHostname(otaHostname);
+  ArduinoOTA.setPassword(otaPassword);
+
+  ArduinoOTA.onStart([]() {
+#ifdef NEED_SERIAL_PRINT
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    }
+    else {  // U_FS
+      type = "filesystem";
+    }
+    Serial.println("OTA | Start updating " + type);
+#endif
+  });
+
+  ArduinoOTA.onEnd([]() {
+#ifdef NEED_SERIAL_PRINT
+    Serial.println("\nOTA | End");
+#endif
+  });
+
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+#ifdef NEED_SERIAL_PRINT
+    Serial.printf("OTA | Progress: %u%%\r", (progress / (total / 100)));
+#endif
+  });
+
+  ArduinoOTA.onError([](ota_error_t error) {
+#ifdef NEED_SERIAL_PRINT
+    Serial.printf("OTA | Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      Serial.println("Auth Failed");
+    }
+    else if (error == OTA_BEGIN_ERROR) {
+      Serial.println("Begin Failed");
+    }
+    else if (error == OTA_CONNECT_ERROR) {
+      Serial.println("Connect Failed");
+    }
+    else if (error == OTA_RECEIVE_ERROR) {
+      Serial.println("Receive Failed");
+    }
+    else if (error == OTA_END_ERROR) {
+      Serial.println("End Failed");
+    }
+#endif
+  });
+
+  ArduinoOTA.begin();
 }
 
 void handleRoot()
@@ -143,10 +272,10 @@ void handleRoot()
   sprintf(
     html,
     INDEX_TEMPLATE,
-      actualTemp,
-      status,
-      secs,
-      successSecs,
+    actualTemp,
+    status,
+    secs,
+    successSecs,
     config.data.ssid,
     IPAddress(config.data.ip).toString().c_str(),
     config.data.port,
@@ -189,64 +318,4 @@ void sendToTarget()
   Serial.println(lastStatusCode);
 #endif
   http.end();
-}
-
-void setup()
-{
-#ifdef NEED_SERIAL_PRINT
-  Serial.begin(115200);
-#endif
-
-#ifdef NEED_SERIAL_PRINT
-  Serial.print("Init EEPROM with size = ");
-  Serial.println(sizeof(ConfigData));
-#endif
-  EEPROM.begin(sizeof(ConfigData));
-
-  config.read();
-
-  dallasSensors.begin();
-
-  dallasSensors.requestTemperatures();
-  delay(750); // to dallas collect data
-  actualTemp = dallasSensors.getTempCByIndex(0);
-
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.softAPConfig(apIp, apGateway, apSubnet);
-  WiFi.softAP(wifiAPSsid, wifiAPPass);
-  lastWifiTime = millis();
-  wifiConnect();
-
-  server.on("/", handleRoot);
-  server.begin();
-#ifdef NEED_SERIAL_PRINT
-  Serial.println("HTTP server started");
-#endif
-
-  boardTime = millis();
-}
-
-void loop()
-{
-  auto passedTime = millis() - boardTime;
-
-  if (passedTime > 1000)
-  {
-    actualTemp = dallasSensors.getTempCByIndex(0);
-
-#ifdef NEED_SERIAL_PRINT
-    Serial.print("Temp: ");
-    Serial.println(actualTemp);
-#endif
-
-    sendToTarget();
-    boardTime = millis();
-  }
-  else if (passedTime > 100)
-  {
-    dallasSensors.requestTemperatures();
-  }
-
-  wifiConnect();
-  server.handleClient();
 }
