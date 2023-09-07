@@ -17,8 +17,8 @@ OneWire oneWire(2);
 DallasTemperature dallasSensors(&oneWire);
 
 // Wifi AP configuration
-constexpr const char *const wifiAPSsid = "TempSensor01";
-constexpr const char *const wifiAPPass = "sensorTemp";
+constexpr const char* const wifiAPSsid = "TempSensor01";
+constexpr const char* const wifiAPPass = "sensorTemp";
 
 // Web server configuration
 ESP8266WebServer server(80);
@@ -28,7 +28,8 @@ IPAddress apGateway(192, 168, 4, 1);
 IPAddress apSubnet(255, 255, 255, 0);
 
 // Runtime variables
-enum class WifiConnectionStatus {
+enum class WifiConnectionStatus
+{
   unknown = 0,
   connecting = 1,
   connected = 2,
@@ -48,10 +49,10 @@ bool wifiConnect()
   {
     if (wifiConnectionStatus != WifiConnectionStatus::connected)
     {
-      #ifdef NEED_SERIAL_PRINT
-        Serial.print("WiFi connected. IP address: ");
-        Serial.println(WiFi.localIP());
-      #endif
+#ifdef NEED_SERIAL_PRINT
+      Serial.print("WiFi connected. IP address: ");
+      Serial.println(WiFi.localIP());
+#endif
       wifiConnectionStatus = WifiConnectionStatus::connected;
     }
     return true;
@@ -61,18 +62,18 @@ bool wifiConnect()
   {
     if (millis() - lastWifiTime > minWifiCheckTimeout)
     {
-      #ifdef NEED_SERIAL_PRINT
-        Serial.print("WiFi connection attempt #");
-        Serial.println(wifiReconnectAttempts + 1);
-      #endif
+#ifdef NEED_SERIAL_PRINT
+      Serial.print("WiFi connection attempt #");
+      Serial.println(wifiReconnectAttempts + 1);
+#endif
 
       if (wifiReconnectAttempts++ > maxWifiReconnectAttempts)
       {
         wifiConnectionStatus = WifiConnectionStatus::unknown;
 
-        #ifdef NEED_SERIAL_PRINT
-          Serial.println(" WiFi connection failed!");
-        #endif
+#ifdef NEED_SERIAL_PRINT
+        Serial.println(" WiFi connection failed!");
+#endif
       }
 
       lastWifiTime = millis();
@@ -80,11 +81,11 @@ bool wifiConnect()
     return false;
   }
 
-  #ifdef NEED_SERIAL_PRINT
-    Serial.print("Connecting to ");
-    Serial.println(config.data.ssid);
-  #endif
-  
+#ifdef NEED_SERIAL_PRINT
+  Serial.print("Connecting to ");
+  Serial.println(config.data.ssid);
+#endif
+
   wifiConnectionStatus = WifiConnectionStatus::connecting;
   wifiReconnectAttempts = 0;
   WiFi.disconnect();
@@ -95,30 +96,30 @@ bool wifiConnect()
 void handleRoot()
 {
   bool update = false;
-  if (server.method() == HTTP_POST && !server.arg("ssid").isEmpty() && !server.arg("pass").isEmpty()) 
+  if (server.method() == HTTP_POST && !server.arg("ssid").isEmpty() && !server.arg("pass").isEmpty())
   {
-    #ifdef NEED_SERIAL_PRINT
-      Serial.print("Setup WiFi params: ssid = ");
-      Serial.print(server.arg("ssid"));
-      Serial.print("; pass = ");
-      Serial.println(server.arg("pass"));
-    #endif
+#ifdef NEED_SERIAL_PRINT
+    Serial.print("Setup WiFi params: ssid = ");
+    Serial.print(server.arg("ssid"));
+    Serial.print("; pass = ");
+    Serial.println(server.arg("pass"));
+#endif
     strcpy(config.data.ssid, server.arg("ssid").c_str());
     strcpy(config.data.pass, server.arg("pass").c_str());
     wifiConnectionStatus = WifiConnectionStatus::unknown;
     update = true;
   }
-  
-  if (server.method() == HTTP_POST && !server.arg("host").isEmpty() && !server.arg("port").isEmpty() && !server.arg("path").isEmpty()) 
+
+  if (server.method() == HTTP_POST && !server.arg("host").isEmpty() && !server.arg("port").isEmpty() && !server.arg("path").isEmpty())
   {
-    #ifdef NEED_SERIAL_PRINT
-      Serial.print("Setup receiver params: host = ");
-      Serial.print(server.arg("host"));
-      Serial.print("; port = ");
-      Serial.print(server.arg("port"));
-      Serial.print("; path = ");
-      Serial.println(server.arg("path"));
-    #endif
+#ifdef NEED_SERIAL_PRINT
+    Serial.print("Setup receiver params: host = ");
+    Serial.print(server.arg("host"));
+    Serial.print("; port = ");
+    Serial.print(server.arg("port"));
+    Serial.print("; path = ");
+    Serial.println(server.arg("path"));
+#endif
     auto ipAddress = IPAddress();
     ipAddress.fromString(server.arg("host"));
     config.data.ip[0] = ipAddress[0];
@@ -134,7 +135,7 @@ void handleRoot()
   {
     config.write();
   }
-  
+
   char html[2048];
   unsigned long secs = (millis() - lastStatusCodeTime) / 1000;
   unsigned long successSecs = (millis() - lastStatusCodeSuccessTime) / 1000;
@@ -142,10 +143,10 @@ void handleRoot()
   sprintf(
     html,
     INDEX_TEMPLATE,
-    actualTemp,
-    status,
-    secs,
-    successSecs,
+      actualTemp,
+      status,
+      secs,
+      successSecs,
     config.data.ssid,
     IPAddress(config.data.ip).toString().c_str(),
     config.data.port,
@@ -158,17 +159,17 @@ void sendToTarget()
 {
   if (actualTemp < -100)
   {
-    #ifdef NEED_SERIAL_PRINT
-      Serial.println("Incorrect temperature value: no need to send");
-    #endif
+#ifdef NEED_SERIAL_PRINT
+    Serial.println("Incorrect temperature value: no need to send");
+#endif
     return;
   }
 
   if (!WiFi.isConnected())
   {
-    #ifdef NEED_SERIAL_PRINT
-      Serial.println("Can't send the temperature due to connection problem");
-    #endif
+#ifdef NEED_SERIAL_PRINT
+    Serial.println("Can't send the temperature due to connection problem");
+#endif
     return;
   }
 
@@ -183,25 +184,25 @@ void sendToTarget()
   {
     lastStatusCodeSuccessTime = lastStatusCodeTime;
   }
-  #ifdef NEED_SERIAL_PRINT
-    Serial.print("Request was sent, return code = ");
-    Serial.println(lastStatusCode);
-  #endif
+#ifdef NEED_SERIAL_PRINT
+  Serial.print("Request was sent, return code = ");
+  Serial.println(lastStatusCode);
+#endif
   http.end();
 }
 
 void setup()
 {
-  #ifdef NEED_SERIAL_PRINT
-    Serial.begin(115200);
-  #endif
+#ifdef NEED_SERIAL_PRINT
+  Serial.begin(115200);
+#endif
 
-  #ifdef NEED_SERIAL_PRINT
-    Serial.print("Init EEPROM with size = ");
-    Serial.println(sizeof(ConfigData));
-  #endif
+#ifdef NEED_SERIAL_PRINT
+  Serial.print("Init EEPROM with size = ");
+  Serial.println(sizeof(ConfigData));
+#endif
   EEPROM.begin(sizeof(ConfigData));
-  
+
   config.read();
 
   dallasSensors.begin();
@@ -218,9 +219,9 @@ void setup()
 
   server.on("/", handleRoot);
   server.begin();
-  #ifdef NEED_SERIAL_PRINT
-    Serial.println("HTTP server started");
-  #endif
+#ifdef NEED_SERIAL_PRINT
+  Serial.println("HTTP server started");
+#endif
 
   boardTime = millis();
 }
@@ -228,15 +229,15 @@ void setup()
 void loop()
 {
   auto passedTime = millis() - boardTime;
-  
+
   if (passedTime > 1000)
   {
     actualTemp = dallasSensors.getTempCByIndex(0);
 
-    #ifdef NEED_SERIAL_PRINT
-      Serial.print("Temp: ");
-      Serial.println(actualTemp);
-    #endif
+#ifdef NEED_SERIAL_PRINT
+    Serial.print("Temp: ");
+    Serial.println(actualTemp);
+#endif
 
     sendToTarget();
     boardTime = millis();
