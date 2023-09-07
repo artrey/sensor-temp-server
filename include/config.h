@@ -5,6 +5,8 @@ struct ConfigData {
     char ssid[24];
     char pass[24];
     uint8_t ip[4];
+    uint16_t port;
+    char path[64];
 };
 
 class EEPROMConfig

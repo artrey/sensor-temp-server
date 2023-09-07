@@ -94,33 +94,63 @@ bool wifiConnect()
 
 void handleRoot()
 {
-  if (server.method() == HTTP_POST && server.arg("ssid") && server.arg("pass") && server.arg("ip")) 
+  bool update = false;
+  if (server.method() == HTTP_POST && !server.arg("ssid").isEmpty() && !server.arg("pass").isEmpty()) 
   {
     #ifdef NEED_SERIAL_PRINT
-      Serial.print("Setup params: ssid = ");
+      Serial.print("Setup WiFi params: ssid = ");
       Serial.print(server.arg("ssid"));
       Serial.print("; pass = ");
-      Serial.print(server.arg("pass"));
-      Serial.print("; ip = ");
-      Serial.println(server.arg("ip"));
+      Serial.println(server.arg("pass"));
     #endif
     strcpy(config.data.ssid, server.arg("ssid").c_str());
     strcpy(config.data.pass, server.arg("pass").c_str());
+    wifiConnectionStatus = WifiConnectionStatus::unknown;
+    update = true;
+  }
+  
+  if (server.method() == HTTP_POST && !server.arg("host").isEmpty() && !server.arg("port").isEmpty() && !server.arg("path").isEmpty()) 
+  {
+    #ifdef NEED_SERIAL_PRINT
+      Serial.print("Setup receiver params: host = ");
+      Serial.print(server.arg("host"));
+      Serial.print("; port = ");
+      Serial.print(server.arg("port"));
+      Serial.print("; path = ");
+      Serial.println(server.arg("path"));
+    #endif
     auto ipAddress = IPAddress();
-    ipAddress.fromString(server.arg("ip"));
+    ipAddress.fromString(server.arg("host"));
     config.data.ip[0] = ipAddress[0];
     config.data.ip[1] = ipAddress[1];
     config.data.ip[2] = ipAddress[2];
     config.data.ip[3] = ipAddress[3];
+    config.data.port = (uint16_t)server.arg("port").toInt();
+    strcpy(config.data.path, server.arg("path").c_str());
+    update = true;
+  }
+
+  if (update)
+  {
     config.write();
-    wifiConnectionStatus = WifiConnectionStatus::unknown;
   }
   
-  char html[1024];
+  char html[2048];
   unsigned long secs = (millis() - lastStatusCodeTime) / 1000;
   unsigned long successSecs = (millis() - lastStatusCodeSuccessTime) / 1000;
   const char* status = lastStatusCode == 200 ? "успешно" : "ошибка";
-  sprintf(html, INDEX_TEMPLATE, actualTemp, status, secs, successSecs, config.data.ssid, IPAddress(config.data.ip).toString().c_str());
+  sprintf(
+    html,
+    INDEX_TEMPLATE,
+    actualTemp,
+    status,
+    secs,
+    successSecs,
+    config.data.ssid,
+    IPAddress(config.data.ip).toString().c_str(),
+    config.data.port,
+    config.data.path
+  );
   server.send(200, "text/html", html);
 }
 
@@ -145,7 +175,7 @@ void sendToTarget()
   WiFiClient client;
   HTTPClient http;
   String postData = "temp=" + String(actualTemp, 3);
-  http.begin(client, IPAddress(config.data.ip).toString(), 80);
+  http.begin(client, IPAddress(config.data.ip).toString(), config.data.port, config.data.path);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
   lastStatusCode = http.POST(postData);
   lastStatusCodeTime = millis();

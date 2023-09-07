@@ -8,6 +8,15 @@
       p {
         text-align: center;
       }
+
+      form {
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        align-items: center;
+        gap: 0.6em;
+        max-width: 480px;
+      }
     </style>
   </head>
   <body>
@@ -15,12 +24,21 @@
     <p>Текущая температура: %.1lf °C</p>
     <p>Последняя передача на приемник: %s, %lu сек назад</p>
     <p>Последняя успешная передача: %lu сек назад</p>
-    <form style="display: grid; grid-template-columns: min-content 1fr; align-items: center; gap: 1em" method="POST">
+
+    <form method="POST">
       <span>Имя WiFi сети:</span><input type="text" name="ssid" required value="%s" />
 
       <span>Пароль WiFi сети:</span><input type="password" name="pass" required />
 
-      <span>IP-адрес приемника:</span><input type="text" name="ip" required value="%s" />
+      <input style="grid-column: span 2" type="submit" value="Сохранить" />
+    </form>
+
+    <form style="margin-top: 2em" method="POST">
+      <span>Хост приемника:</span><input type="text" name="host" required value="%s" />
+
+      <span>Порт приемника:</span><input type="text" name="port" required value="%d" />
+
+      <span>Маршрут на приемнике:</span><input type="text" name="path" required value="%s" />
 
       <input style="grid-column: span 2" type="submit" value="Сохранить" />
     </form>
