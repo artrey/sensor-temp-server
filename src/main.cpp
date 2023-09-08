@@ -263,6 +263,10 @@ void handleRoot()
   if (update)
   {
     config.write();
+
+    server.sendHeader("Location", "/", true);
+    server.send(302);
+    return;
   }
 
   char html[2048];
