@@ -58,6 +58,7 @@ char* htmlAnswer;
 bool wifiConnect();
 void configureOTA();
 void handleRoot();
+void handleTemp();
 void sendToTarget();
 
 void setup()
@@ -89,6 +90,7 @@ void setup()
   htmlAnswer = new char[4096];
 
   server.on("/", handleRoot);
+  server.on("/temp", handleTemp);
   server.begin();
 #ifdef NEED_SERIAL_PRINT
   Serial.println("HTTP server started");
@@ -301,6 +303,11 @@ void handleRoot()
     config.data.path
   );
   server.send(200, "text/html", htmlAnswer);
+}
+
+void handleTemp()
+{
+  server.send(200, "text/html", String(actualTemp, 3));
 }
 
 void sendToTarget()
