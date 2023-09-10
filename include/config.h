@@ -10,6 +10,8 @@ struct ConfigData {
   uint8_t ip[4];
   uint16_t port;
   char path[64];
+  uint16_t sendDelay;
+  bool sendEnabled;
 };
 
 class EEPROMConfig

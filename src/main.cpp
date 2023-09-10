@@ -10,6 +10,7 @@
 
 constexpr uint8_t maxWifiReconnectAttempts = 20;
 constexpr unsigned long minWifiCheckTimeout = 500;
+constexpr unsigned long temperatureDelay = 1000;
 
 EEPROMConfig config(0);
 
@@ -44,7 +45,8 @@ WifiConnectionStatus wifiConnectionStatus = WifiConnectionStatus::unknown;
 uint8_t wifiReconnectAttempts = 0;
 unsigned long lastWifiTime;
 double actualTemp;
-unsigned long boardTime;
+unsigned long tempLastTime;
+unsigned long sendLastTime;
 int lastStatusCode = 0;
 unsigned long lastStatusCodeTime;
 unsigned long lastStatusCodeSuccessTime = -1;
@@ -81,7 +83,7 @@ void setup()
   lastWifiTime = millis();
   wifiConnect();
 
-  htmlAnswer = (char*)malloc(4096);
+  htmlAnswer = new char[4096];
 
   server.on("/", handleRoot);
   server.begin();
@@ -91,28 +93,27 @@ void setup()
 
   configureOTA();
 
-  boardTime = millis();
+  tempLastTime = millis();
 }
 
 void loop()
 {
-  auto passedTime = millis() - boardTime;
-
-  if (passedTime > 1000)
+  if (millis() - tempLastTime > temperatureDelay)
   {
     actualTemp = dallasSensors.getTempCByIndex(0);
-
 #ifdef NEED_SERIAL_PRINT
     Serial.print("Temp: ");
     Serial.println(actualTemp);
 #endif
 
-    sendToTarget();
-    boardTime = millis();
-  }
-  else if (passedTime > 100)
-  {
     dallasSensors.requestTemperatures();
+    tempLastTime = millis();
+  }
+
+  if (config.data.sendEnabled && millis() - sendLastTime > (unsigned long)config.data.sendDelay * 1000)
+  {
+    sendToTarget();
+    sendLastTime = millis();
   }
 
   wifiConnect();
@@ -290,6 +291,8 @@ void handleRoot()
     secs,
     successSecs,
     config.data.ssid,
+    config.data.sendEnabled ? "checked" : "",
+    config.data.sendDelay,
     IPAddress(config.data.ip).toString().c_str(),
     config.data.port,
     config.data.path

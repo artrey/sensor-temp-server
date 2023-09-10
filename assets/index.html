@@ -49,6 +49,10 @@
     <hr />
 
     <form method="POST">
+      <span>Отправка на хост:</span><input type="checkbox" name="send" %s />
+
+      <span>Период отправки (сек):</span><input type="number" name="delay" required value="%d" />
+
       <span>Хост приемника:</span><input type="text" name="host" required value="%s" />
 
       <span>Порт приемника:</span><input type="number" name="port" required value="%d" />
