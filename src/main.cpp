@@ -48,6 +48,7 @@ unsigned long boardTime;
 int lastStatusCode = 0;
 unsigned long lastStatusCodeTime;
 unsigned long lastStatusCodeSuccessTime = -1;
+char* htmlAnswer;
 
 bool wifiConnect();
 void configureOTA();
@@ -79,6 +80,8 @@ void setup()
   WiFi.softAP(wifiAPSsid, wifiAPPass);
   lastWifiTime = millis();
   wifiConnect();
+
+  htmlAnswer = (char*)malloc(4096);
 
   server.on("/", handleRoot);
   server.begin();
@@ -269,12 +272,11 @@ void handleRoot()
     return;
   }
 
-  char html[2048];
   unsigned long secs = (millis() - lastStatusCodeTime) / 1000;
   unsigned long successSecs = (millis() - lastStatusCodeSuccessTime) / 1000;
   const char* status = lastStatusCode == 200 ? "успешно" : "ошибка";
   sprintf(
-    html,
+    htmlAnswer,
     INDEX_TEMPLATE,
     actualTemp,
     status,
@@ -285,7 +287,7 @@ void handleRoot()
     config.data.port,
     config.data.path
   );
-  server.send(200, "text/html", html);
+  server.send(200, "text/html", htmlAnswer);
 }
 
 void sendToTarget()
