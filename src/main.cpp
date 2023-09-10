@@ -6,6 +6,7 @@
 #include <ESP8266WebServer.h>
 #include <EEPROM.h>
 #include "config.h"
+#include "median_filter.h"
 #include "index.html.h"
 
 constexpr uint8_t maxWifiReconnectAttempts = 20;
@@ -13,6 +14,8 @@ constexpr unsigned long minWifiCheckTimeout = 500;
 constexpr unsigned long temperatureDelay = 1000;
 
 EEPROMConfig config(0);
+
+MedianFilter<float, 10> medianFilter;
 
 // Dallas configuration
 OneWire oneWire(2);
@@ -100,7 +103,7 @@ void loop()
 {
   if (millis() - tempLastTime > temperatureDelay)
   {
-    actualTemp = dallasSensors.getTempCByIndex(0);
+    actualTemp = medianFilter(dallasSensors.getTempCByIndex(0));
 #ifdef NEED_SERIAL_PRINT
     Serial.print("Temp: ");
     Serial.println(actualTemp);
